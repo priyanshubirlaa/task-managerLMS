@@ -7,6 +7,7 @@ export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [statusFilter, setStatusFilter] = useState<'All' | TaskStatus>('All');
     const [priorityFilter, setPriorityFilter] = useState<'All' | TaskPriority>('All');
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [form, setForm] = useState({
         title: '',
         assignee: '',
@@ -37,14 +38,41 @@ export default function TasksPage() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        const method = editingId ? 'PUT' : 'POST';
+        const payload = editingId ? { id: editingId, ...form } : form;
         const res = await fetch('/api/tasks', {
-            method: 'POST',
+            method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form)
+            body: JSON.stringify(payload)
         });
         if (res.ok) {
             await refreshTasks();
+            setEditingId(null);
             setForm({ title: '', assignee: '', priority: 'Medium', status: 'Pending', dueDate: '', project: '', description: '' });
+        }
+    };
+
+    const startEdit = (task: Task) => {
+        setEditingId(task.id);
+        setForm({
+            title: task.title,
+            assignee: task.assignee,
+            priority: task.priority,
+            status: task.status,
+            dueDate: task.dueDate,
+            project: task.project,
+            description: task.description
+        });
+    };
+
+    const handleComplete = async (task: Task) => {
+        const res = await fetch('/api/tasks', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: task.id, status: 'Done' })
+        });
+        if (res.ok) {
+            await refreshTasks();
         }
     };
 
@@ -75,7 +103,7 @@ export default function TasksPage() {
 
             <section className="grid grid-2" style={{ marginTop: 16 }}>
                 <div className="card">
-                    <h3 style={{ marginTop: 0 }}>Add a New Task</h3>
+                    <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Task' : 'Add a New Task'}</h3>
                     <form onSubmit={handleSubmit} className="form-grid">
                         <input placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
                         <input placeholder="Assignee" value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })} required />
@@ -92,7 +120,8 @@ export default function TasksPage() {
                         <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} required />
                         <input placeholder="Project" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} required />
                         <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
-                        <button type="submit">Create Task</button>
+                        <button type="submit">{editingId ? 'Save Changes' : 'Create Task'}</button>
+                        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ title: '', assignee: '', priority: 'Medium', status: 'Pending', dueDate: '', project: '', description: '' }); }}>Cancel</button>}
                     </form>
                 </div>
 
@@ -106,6 +135,8 @@ export default function TasksPage() {
                                 <div className="row" style={{ marginTop: 8 }}>
                                     <span className={`badge ${task.status === 'Done' ? 'done' : task.status === 'In Progress' ? 'progress' : 'pending'}`}>{task.status}</span>
                                     <span className="badge secondary">{task.priority}</span>
+                                    <button type="button" onClick={() => startEdit(task)}>Edit</button>
+                                    {task.status !== 'Done' && <button type="button" onClick={() => handleComplete(task)}>Mark Done</button>}
                                 </div>
                             </div>
                         ))}

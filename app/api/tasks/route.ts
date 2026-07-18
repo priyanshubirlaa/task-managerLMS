@@ -21,3 +21,29 @@ export async function POST(request: Request) {
     tasksStore.unshift(newTask);
     return NextResponse.json(newTask, { status: 201 });
 }
+
+export async function PUT(request: Request) {
+    const body = await request.json();
+    const index = tasksStore.findIndex((task) => task.id === body.id);
+    if (index === -1) {
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    tasksStore[index] = { ...tasksStore[index], ...body };
+    return NextResponse.json(tasksStore[index]);
+}
+
+export async function DELETE(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const id = Number(searchParams.get('id'));
+    if (!id) {
+        return NextResponse.json({ error: 'Missing task id' }, { status: 400 });
+    }
+
+    const filteredTasks = tasksStore.filter((task) => task.id !== id);
+    filteredTasks.forEach((task, index) => {
+        tasksStore[index] = task;
+    });
+    tasksStore.length = filteredTasks.length;
+    return NextResponse.json({ success: true });
+}
