@@ -22,13 +22,14 @@ export default function HomePage() {
     const [statusFilter, setStatusFilter] = useState<'All' | Task['status']>('All');
     const [priorityFilter, setPriorityFilter] = useState<'All' | Task['priority']>('All');
 
+    const loadDashboard = async () => {
+        const res = await fetch('/api/dashboard');
+        const json = await res.json();
+        setData(json);
+    };
+
     useEffect(() => {
-        const load = async () => {
-            const res = await fetch('/api/dashboard');
-            const json = await res.json();
-            setData(json);
-        };
-        load();
+        loadDashboard();
     }, []);
 
     const filteredTasks = useMemo(() => {
@@ -77,7 +78,7 @@ export default function HomePage() {
                     <div className="card">
                         <h3 style={{ marginTop: 0 }}>Projects Overview</h3>
                         <ul>
-                            {['Website Redesign', 'Mobile App', 'Operations'].map((project, index) => (
+                            {['Website Redesign', 'Mobile App', 'Operations'].map((project) => (
                                 <li key={project} style={{ marginBottom: 8 }}>
                                     {project} — {data.tasks.filter((task) => task.project === project).length} task(s)
                                 </li>

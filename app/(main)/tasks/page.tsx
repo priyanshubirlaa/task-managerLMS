@@ -18,12 +18,7 @@ export default function TasksPage() {
     });
 
     useEffect(() => {
-        const load = async () => {
-            const res = await fetch('/api/tasks');
-            const data = await res.json();
-            setTasks(data);
-        };
-        load();
+        refreshTasks();
     }, []);
 
     const filteredTasks = useMemo(() => {
@@ -34,6 +29,12 @@ export default function TasksPage() {
         });
     }, [tasks, statusFilter, priorityFilter]);
 
+    const refreshTasks = async () => {
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        setTasks(data);
+    };
+
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         const res = await fetch('/api/tasks', {
@@ -41,9 +42,10 @@ export default function TasksPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(form)
         });
-        const createdTask = await res.json();
-        setTasks((current) => [createdTask, ...current]);
-        setForm({ title: '', assignee: '', priority: 'Medium', status: 'Pending', dueDate: '', project: '', description: '' });
+        if (res.ok) {
+            await refreshTasks();
+            setForm({ title: '', assignee: '', priority: 'Medium', status: 'Pending', dueDate: '', project: '', description: '' });
+        }
     };
 
     return (
